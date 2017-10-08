@@ -39,23 +39,15 @@ func main() {
 	}
 }
 
-// マークダウンとして処理するのに必要な業のみ取り出したスライスを返却
-func makeMdLines(ls []string) (mdls []string) {
-	readFlg := false
-	for _, l := range ls {
-		if l == "{code}" {
-			readFlg = true
-			continue
-		}
-		if l == "{/code}" {
-			readFlg = false
-			break
-		}
-		if readFlg {
-			mdls = append(mdls, l)
-		}
+// ファイル内のすべての行テキストを読み込む
+func scanLines(fp *os.File) (ls []string) {
+	ls = make([]string, 0)
+	scanner := bufio.NewScanner(fp)
+	for scanner.Scan() {
+		l := scanner.Text()
+		ls = append(ls, l)
 	}
-	if len(mdls) == 0 {
+	if err := scanner.Err(); err != nil {
 		log.Fatal()
 	}
 	return
@@ -79,20 +71,6 @@ func makeMenu(ls []string) (menu string) {
 	return
 }
 
-// ファイル内のすべての行テキストを読み込む
-func scanLines(fp *os.File) (ls []string) {
-	ls = make([]string, 0)
-	scanner := bufio.NewScanner(fp)
-	for scanner.Scan() {
-		l := scanner.Text()
-		ls = append(ls, l)
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal()
-	}
-	return
-}
-
 // マークダウン行のスライスを整形する
 func formatLines(ls []string) (fls []string) {
 	fls = make([]string, 0)
@@ -100,24 +78,39 @@ func formatLines(ls []string) (fls []string) {
 	for _, l := range ls {
 		cnt := strings.Count(l, "#")
 		var nl string
-		switch cnt {
-		case 0:
+		switch {
+		case cnt == 0:
 			indent := strings.Repeat(INDENT_STR, ic)
 			nl = indent + l
-		case 1:
-			indent := strings.Repeat(INDENT_STR, cnt-1)
-			nl = indent + ICONS[0] + strings.Trim(l, "# ")
-			ic = cnt
-		case 2:
-			indent := strings.Repeat(INDENT_STR, cnt-1)
-			nl = indent + ICONS[1] + strings.Trim(l, "# ")
-			ic = cnt
-		case 3:
-			indent := strings.Repeat(INDENT_STR, cnt-1)
-			nl = indent + ICONS[2] + strings.Trim(l, "# ")
+		case 1 <= cnt && cnt <= 6:
+			c := cnt - 1
+			indent := strings.Repeat(INDENT_STR, c)
+			nl = indent + ICONS[c] + strings.Trim(l, "# ")
 			ic = cnt
 		}
 		fls = append(fls, nl)
+	}
+	return
+}
+
+// マークダウンとして処理するのに必要な業のみ取り出したスライスを返却
+func makeMdLines(ls []string) (mdls []string) {
+	readFlg := false
+	for _, l := range ls {
+		if l == "{code}" {
+			readFlg = true
+			continue
+		}
+		if l == "{/code}" {
+			readFlg = false
+			break
+		}
+		if readFlg {
+			mdls = append(mdls, l)
+		}
+	}
+	if len(mdls) == 0 {
+		log.Fatal()
 	}
 	return
 }
