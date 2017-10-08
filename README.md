@@ -1,4 +1,4 @@
-# md4planeマニュアル
+# Markdown For Plane Textマニュアル
 
 ## 目的
 マークダウン形式で書いた文章にインデントを付与して
